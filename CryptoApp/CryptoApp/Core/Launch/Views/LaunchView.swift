@@ -11,7 +11,7 @@ struct LaunchView: View {
     
     var body: some View {
         ZStack {
-            Color.launch.background
+            Color.background
                 .ignoresSafeArea()
             
             Image("logo-transparent")
@@ -25,7 +25,7 @@ struct LaunchView: View {
                             Text(loadingText[index])
                                 .font(.headline)
                                 .fontWeight(.heavy)
-                                .foregroundColor(Color.launch.accent)
+                                .foregroundColor(Color.accent)
                                 .offset(y: counter == index ? -5 : 0)
                         }
                     }

@@ -12,6 +12,7 @@ struct LoginRegisterView: View {
     @State private var isAccountCreated = false
     @AppStorage("uid") var userID: String = ""
     @State private var navigateToHomeView = false
+    @State private var isForgotPasswordAlert = false
 
     var body: some View {
         NavigationView {
@@ -27,21 +28,35 @@ struct LoginRegisterView: View {
                             .opacity(1)
                             .scaleEffect(isLoginMode ? 0.8 : 0.8)
                             .animation(.spring(), value: isLoginMode)
-
                     }
                     .padding(.top)
-
                     Spacer()
-
                     inputField(image: "mail", placeholder: "Email", text: $email, isValid: email.isValidEmail())
                         .transition(.opacity.combined(with: .scale))
-
+                    
                     inputField(image: "lock", placeholder: "Password", text: $password, isSecure: true, isValid: isValidPassword(password))
                         .transition(.opacity.combined(with: .scale))
 
                     if !isLoginMode {
                         inputField(image: "lock.fill", placeholder: "Confirm Password", text: $confirmPassword, isSecure: true, isValid: password == confirmPassword)
                             .transition(.opacity.combined(with: .scale))
+                    }
+
+                    if isLoginMode {
+                        Button("Forgot Password?") {
+                            isForgotPasswordAlert = true
+                        }
+                        .foregroundColor(.blue)
+                        .padding()
+                        .alert("Reset Password", isPresented: $isForgotPasswordAlert) {
+                            TextField("Enter your email", text: $email)
+                            Button("Send Reset Link") {
+                                sendPasswordReset()
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("We'll send a password reset link to your email.")
+                        }
                     }
 
                     Button(action: {
@@ -56,9 +71,6 @@ struct LoginRegisterView: View {
                             .animation(.easeInOut, value: isLoginMode)
                     }
                     .padding()
-
-                    Spacer()
-
                     Button(action: isLoginMode ? loginUser : registerUser) {
                         Text(isLoginMode ? "Sign In" : "Sign Up")
                             .foregroundColor(.white)
@@ -67,14 +79,13 @@ struct LoginRegisterView: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 10).fill(Color.black))
-                            .scaleEffect(isLoginMode ? 1 : 1.1) // slight scale effect
+                            .scaleEffect(isLoginMode ? 1 : 1.1)
                             .animation(.easeInOut, value: isLoginMode)
                     }
-                    .padding(.horizontal)
+                    .padding()
                     .alert(isPresented: $isShowingAlert) {
                         Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
                     }
-
                     .alert(isPresented: $isAccountCreated) {
                         Alert(
                             title: Text("Success"),
@@ -87,7 +98,6 @@ struct LoginRegisterView: View {
                             }
                         )
                     }
-
                     Spacer()
                 }
                 .padding()
@@ -189,9 +199,25 @@ struct LoginRegisterView: View {
             }
         }
     }
+
+    private func sendPasswordReset() {
+        guard email.isValidEmail() else {
+            alertMessage = "Please enter a valid email address."
+            isShowingAlert = true
+            return
+        }
+
+        Auth.auth().sendPasswordReset(withEmail: email) { error in
+            if let error = error {
+                alertMessage = error.localizedDescription
+                isShowingAlert = true
+            } else {
+                alertMessage = "A password reset link has been sent to your email."
+                isShowingAlert = true
+            }
+        }
+    }
 }
-
-
 
 func isValidPassword(_ password: String) -> Bool {
     return password.count >= 6

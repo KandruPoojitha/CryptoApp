@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8A53C5272CD2B1BE00297A40 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8A53C5262CD2B1BE00297A40 /* FirebaseAuth */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8ABC74192CC439920089EF38 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8A53C5272CD2B1BE00297A40 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = CryptoApp;
 			packageProductDependencies = (
+				8A53C5262CD2B1BE00297A40 /* FirebaseAuth */,
 			);
 			productName = CryptoApp;
 			productReference = 8ABC74082CC439900089EF38 /* CryptoApp.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 8ABC73FF2CC4398F0089EF38;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8A53C5252CD2B1BE00297A40 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8ABC74092CC439900089EF38 /* Products */;
 			projectDirPath = "";
@@ -552,6 +561,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8A53C5252CD2B1BE00297A40 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8A53C5262CD2B1BE00297A40 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8A53C5252CD2B1BE00297A40 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8ABC74002CC4398F0089EF38 /* Project object */;
 }
