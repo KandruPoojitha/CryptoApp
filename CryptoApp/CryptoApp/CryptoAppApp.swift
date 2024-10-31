@@ -1,17 +1,22 @@
-//
-//  CryptoAppApp.swift
-//  CryptoApp
-//
-//  Created by Lithin Varma on 2024-10-19.
-//
-
 import SwiftUI
+import Firebase
 
 @main
-struct CryptoAppApp: App {
+struct CrtptoAppApp: App {
+    @State private var showLaunchView = true
+    init() {
+        FirebaseApp.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationView {
+                if showLaunchView {
+                    LaunchView(showLaunchView: $showLaunchView)
+                } else {
+                    LoginRegisterView()
+                }
+            }
         }
     }
 }
