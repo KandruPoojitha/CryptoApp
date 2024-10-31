@@ -8,7 +8,7 @@ struct HomeView: View {
     
     var body: some View {
         ZStack {
-            Color.background
+            Color.theme.background
                 .ignoresSafeArea()
             VStack{
                 HomeHeader
@@ -19,18 +19,6 @@ struct HomeView: View {
             }
         }
         
-        HStack{
-            CirleButtonView(iconName: showPortfolio ? "plus" : "info")
-                .background(
-                    CircleButtonAnimationView(animate: $showPortfolio))
-            Spacer()
-            Text(showPortfolio ? "Portfolio" : "Live Prices")
-                .font(.headline)
-                .fontWeight(.heavy)
-                .foregroundColor(Color.accent)
-                .animation(.none)
-            Spacer()
-        }
     }
 }
 
@@ -56,7 +44,7 @@ extension HomeView {
             Text(showPortfolio ? "Portfolio" : "Live Prices")
                 .font(.headline)
                 .fontWeight(.heavy)
-                .foregroundColor(Color.accent)
+                .foregroundColor(Color.theme.accent)
                 .animation(.none)
             Spacer()
             CirleButtonView(iconName: "chevron.right")
@@ -81,7 +69,7 @@ extension HomeView {
                 .frame(width: UIScreen.main.bounds.width / 3.5, alignment: .trailing)
         }
         .font(.caption)
-        .foregroundColor(Color.secondaryText)
+        .foregroundColor(Color.theme.secondaryText)
         .padding(.horizontal)
     }
 }

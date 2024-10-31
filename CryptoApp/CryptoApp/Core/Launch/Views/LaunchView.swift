@@ -11,7 +11,7 @@ struct LaunchView: View {
     
     var body: some View {
         ZStack {
-            Color.background
+            Color.launch.background
                 .ignoresSafeArea()
             
             Image("logo-transparent")
@@ -25,7 +25,7 @@ struct LaunchView: View {
                             Text(loadingText[index])
                                 .font(.headline)
                                 .fontWeight(.heavy)
-                                .foregroundColor(Color.accent)
+                                .foregroundColor(Color.launch.accent)
                                 .offset(y: counter == index ? -5 : 0)
                         }
                     }
@@ -44,7 +44,7 @@ struct LaunchView: View {
                     counter = 0
                     loops += 1
                     if loops >= 2 {
-                        showLaunchView = false // Navigate to LoginRegisterView
+                        showLaunchView = false
                     }
                 } else {
                     counter += 1

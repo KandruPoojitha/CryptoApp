@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8A53C5272CD2B1BE00297A40 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8A53C5262CD2B1BE00297A40 /* FirebaseAuth */; };
+		8A53C5362CD3402600297A40 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8A53C5352CD3402600297A40 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8A53C5352CD3402600297A40 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		8ABC74082CC439900089EF38 /* CryptoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CryptoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8ABC74182CC439920089EF38 /* CryptoAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CryptoAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8ABC74222CC439920089EF38 /* CryptoAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CryptoAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -80,6 +82,7 @@
 		8ABC73FF2CC4398F0089EF38 = {
 			isa = PBXGroup;
 			children = (
+				8A53C5352CD3402600297A40 /* GoogleService-Info.plist */,
 				8ABC740A2CC439900089EF38 /* CryptoApp */,
 				8ABC741B2CC439920089EF38 /* CryptoAppTests */,
 				8ABC74252CC439920089EF38 /* CryptoAppUITests */,
@@ -221,6 +224,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8A53C5362CD3402600297A40 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
