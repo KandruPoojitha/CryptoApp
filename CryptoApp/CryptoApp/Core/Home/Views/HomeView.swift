@@ -1,5 +1,3 @@
-
-
 import SwiftUI
 
 struct HomeView: View {
@@ -12,13 +10,11 @@ struct HomeView: View {
                 .ignoresSafeArea()
             VStack{
                 HomeHeader
-                
                 columnTitles
-                
                 Spacer(minLength: 0)
             }
         }
-        
+        .navigationBarBackButtonHidden(true) 
     }
 }
 
@@ -27,8 +23,8 @@ struct HomeView_Previews: PreviewProvider{
         NavigationView{
             HomeView()
                 .navigationBarHidden(true)
+                .preferredColorScheme(.dark)
         }
-        .preferredColorScheme(.dark)
     }
 }
 
