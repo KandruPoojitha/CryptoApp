@@ -228,3 +228,4 @@ struct LoginRegisterView_Previews: PreviewProvider {
         LoginRegisterView()
     }
 }
+ 
