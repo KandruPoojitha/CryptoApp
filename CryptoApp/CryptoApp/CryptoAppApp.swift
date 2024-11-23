@@ -17,7 +17,7 @@ struct CrtptoAppApp: App {
                     LoginRegisterView()
                 }
             }
-            .preferredColorScheme(.dark)
+          //  .preferredColorScheme(.dark)
         }
     }
 }
