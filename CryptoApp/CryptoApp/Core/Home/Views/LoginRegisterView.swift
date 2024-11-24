@@ -31,14 +31,11 @@ struct LoginRegisterView: View {
                     .padding(.top)
                     Spacer()
                     inputField(image: "mail", placeholder: "Email", text: $email, isValid: email.isValidEmail())
-                        .transition(.opacity.combined(with: .scale))
                     
                     inputField(image: "lock", placeholder: "Password", text: $password, isSecure: true, isValid: isValidPassword(password))
-                        .transition(.opacity.combined(with: .scale))
-
+                    
                     if !isLoginMode {
                         inputField(image: "lock.fill", placeholder: "Confirm Password", text: $confirmPassword, isSecure: true, isValid: password == confirmPassword)
-                            .transition(.opacity.combined(with: .scale))
                     }
 
                     if isLoginMode {
@@ -73,12 +70,12 @@ struct LoginRegisterView: View {
 
                     Button(action: isLoginMode ? loginUser : registerUser) {
                         Text(isLoginMode ? "Sign In" : "Sign Up")
-                            .foregroundColor(.black)
+                            .foregroundColor(.white)
                             .font(.title3)
                             .bold()
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color.white)) // White background in light mode
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color.blue))
                             .scaleEffect(isLoginMode ? 1 : 1.1)
                             .animation(.easeInOut, value: isLoginMode)
                     }
@@ -111,23 +108,45 @@ struct LoginRegisterView: View {
     }
 
     private func inputField(image: String, placeholder: String, text: Binding<String>, isSecure: Bool = false, isValid: Bool = false) -> some View {
-        HStack {
-            Image(systemName: image)
-            if isSecure {
-                SecureField(placeholder, text: text)
-            } else {
-                TextField(placeholder, text: text)
+        VStack(alignment: .leading) {
+            HStack {
+                Image(systemName: image)
+                if isSecure {
+                    SecureField(placeholder, text: text)
+                } else {
+                    TextField(placeholder, text: text)
+                }
+                Spacer()
+                if text.wrappedValue.count != 0 {
+                    Image(systemName: isValid ? "checkmark" : "xmark")
+                        .fontWeight(.bold)
+                        .foregroundColor(isValid ? .green : .red)
+                }
             }
-            Spacer()
-            if text.wrappedValue.count != 0 {
-                Image(systemName: isValid ? "checkmark" : "xmark")
-                    .fontWeight(.bold)
-                    .foregroundColor(isValid ? .green : .red)
+            .padding()
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(lineWidth: 2).foregroundColor(Color.secondary))
+            .padding(.horizontal)
+            
+            if !isValid && text.wrappedValue.count != 0 {
+                Text(validationMessage(for: placeholder))
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .padding(.horizontal)
             }
         }
-        .padding()
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(lineWidth: 2).foregroundColor(Color.secondary))
-        .padding(.horizontal)
+    }
+
+    private func validationMessage(for field: String) -> String {
+        switch field {
+        case "Email":
+            return "Please enter a valid email address."
+        case "Password":
+            return "Password must be at least 6 characters."
+        case "Confirm Password":
+            return "Passwords do not match."
+        default:
+            return ""
+        }
     }
 
     private func resetFields() {
@@ -150,8 +169,19 @@ struct LoginRegisterView: View {
         }
 
         Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
-            if let error = error {
-                alertMessage = error.localizedDescription
+            if let error = error as NSError? {
+                switch AuthErrorCode(rawValue: error.code) {
+                case .wrongPassword:
+                    alertMessage = "The password you entered is incorrect. Please try again."
+                case .invalidEmail:
+                    alertMessage = "The email address format is invalid. Please check and try again."
+                case .userNotFound:
+                    alertMessage = "No account found with this email address. Please sign up."
+                case .userDisabled:
+                    alertMessage = "This account has been disabled. Contact support for assistance."
+                default:
+                    alertMessage = "An unexpected error occurred: \(error.localizedDescription)"
+                }
                 isShowingAlert = true
                 return
             }
@@ -223,9 +253,11 @@ func isValidPassword(_ password: String) -> Bool {
     return password.count >= 6
 }
 
+
+
 struct LoginRegisterView_Previews: PreviewProvider {
     static var previews: some View {
         LoginRegisterView()
-            .preferredColorScheme(.dark) // Set dark mode for the preview
+            .preferredColorScheme(.dark)
     }
 }
