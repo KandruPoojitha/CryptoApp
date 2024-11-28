@@ -13,6 +13,7 @@ struct HomeView: View {
                 .ignoresSafeArea()
             VStack{
                 HomeHeader
+                SearchBarView(searchText: $vm.searchText)
                 columnTitles
                 coinsList
                 Spacer(minLength: 0)
