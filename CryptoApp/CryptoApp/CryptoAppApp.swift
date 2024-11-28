@@ -3,6 +3,7 @@ import Firebase
 
 @main
 struct CrtptoAppApp: App {
+    @StateObject var vm = HomeViewModel()
     @State private var showLaunchView = true
     init() {
         FirebaseApp.configure()
@@ -17,7 +18,8 @@ struct CrtptoAppApp: App {
                     LoginRegisterView()
                 }
             }
-          //  .preferredColorScheme(.dark)
+            .environmentObject(vm)
+            .preferredColorScheme(.dark)
         }
     }
 }
