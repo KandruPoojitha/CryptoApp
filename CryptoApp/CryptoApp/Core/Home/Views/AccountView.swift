@@ -26,8 +26,8 @@ struct AccountView: View {
                             // Wallet Balance Section
                             walletBalanceSection
                         
+                            // Transaction History Buttons
                             transactionHistoryButton
-                            // Transaction History Button
                             fundstransactionHistoryButton
 
                             // Account Options
@@ -98,7 +98,6 @@ struct AccountView: View {
                             .background(Color.blue)
                             .cornerRadius(10)
                     }
-
                 } else {
                     Text("Loading...")
                         .foregroundColor(.gray)
@@ -146,6 +145,7 @@ struct AccountView: View {
         .background(Color.gray.opacity(0.1))
         .cornerRadius(10)
     }
+
     // MARK: - Transaction History Button
     private var transactionHistoryButton: some View {
         NavigationLink(destination: TransactionHistoryView()) {
@@ -193,11 +193,48 @@ struct AccountView: View {
                 self.userName = userData["name"] as? String ?? "Unknown User"
                 self.userEmail = userData["email"] as? String ?? "unknown@example.com"
                 self.walletBalance = userData["balance"] as? Double ?? 0.0
-                self.stripeCustomerId = userData["stripeCustomerId"] as? String ?? "" // Fetch Stripe Customer ID
+                self.stripeCustomerId = userData["stripeCustomerId"] as? String ?? ""
+
+                // If stripeCustomerId is empty, create a new Stripe customer
+                if self.stripeCustomerId.isEmpty {
+                    self.createStripeCustomer()
+                }
             } else {
                 print("Error: User data not found in Firebase.")
             }
         }
+    }
+
+    // MARK: - Create Stripe Customer
+    private func createStripeCustomer() {
+        let url = URL(string: "http://localhost:3000/create-customer")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "email": userEmail,
+            "name": userName
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data, error == nil else {
+                print("Error creating Stripe customer: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+
+            if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+               let customerId = json["customerId"] as? String {
+                self.stripeCustomerId = customerId
+
+                // Save to Firebase
+                if let userID = Auth.auth().currentUser?.uid {
+                    let ref = Database.database().reference().child("users").child(userID)
+                    ref.updateChildValues(["stripeCustomerId": customerId])
+                }
+            }
+        }.resume()
     }
 
     // MARK: - Send Reset Password Link
@@ -219,7 +256,7 @@ struct AccountView: View {
         do {
             try Auth.auth().signOut()
             print("User logged out successfully.")
-            isLoggedOut = true // Trigger navigation to login screen
+            isLoggedOut = true
         } catch {
             print("Error signing out: \(error.localizedDescription)")
         }
