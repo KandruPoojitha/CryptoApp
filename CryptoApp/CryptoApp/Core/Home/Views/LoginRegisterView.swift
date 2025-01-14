@@ -99,7 +99,7 @@ struct LoginRegisterView: View {
                 }
                 .padding()
                 .background(
-                    NavigationLink(destination: HomeView(), isActive: $navigateToHomeView) {
+                    NavigationLink(destination: MainTabView(), isActive: $navigateToHomeView) {
                         EmptyView()
                     }
                 )

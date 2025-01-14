@@ -4,7 +4,7 @@ import FirebaseDatabase
 
 struct BuySellView: View {
     let coin: CoinModel
-    let isBuying: Bool
+    let isBuying: Bool // `true` for buying, `false` for selling
 
     @State private var enteredAmount: String = ""
     @State private var calculatedQuantity: String = "0.0"
@@ -149,35 +149,45 @@ struct BuySellView: View {
         let userRef = Database.database().reference().child("users").child(userID)
         let portfolioRef = Database.database().reference().child("portfolio").child(userID).child(coin.id)
 
+        // Update Wallet Balance
         userRef.child("balance").observeSingleEvent(of: .value) { snapshot in
             let currentBalance = snapshot.value as? Double ?? 0.0
             let updatedBalance = isBuying ? (currentBalance - amount) : (currentBalance + amount)
 
             userRef.child("balance").setValue(updatedBalance)
 
+            // Update Portfolio
             portfolioRef.observeSingleEvent(of: .value) { snapshot in
                 var currentQuantity = snapshot.childSnapshot(forPath: "quantity").value as? Double ?? 0.0
                 var investedAmount = snapshot.childSnapshot(forPath: "investedAmount").value as? Double ?? 0.0
 
                 if isBuying {
+                    // Buying a coin
                     currentQuantity += quantity
                     investedAmount += amount
                 } else {
-                    if quantity == currentQuantity {
+                    // Selling a coin
+                    currentQuantity -= quantity
+                    investedAmount -= amount
+
+                    // If the user sells all holdings, remove the coin from the portfolio
+                    if currentQuantity <= 0 {
                         portfolioRef.removeValue()
-                    } else {
-                        currentQuantity -= quantity
-                        investedAmount -= (amount / currentQuantity)
-                        portfolioRef.setValue([
-                            "name": coin.name,
-                            "symbol": coin.symbol,
-                            "image": coin.image,
-                            "currentPrice": coin.currentPrice,
-                            "quantity": currentQuantity,
-                            "investedAmount": max(0, investedAmount)
-                        ])
+                        self.saveTransaction(amount: amount, quantity: quantity, isBuying: isBuying)
+                        self.presentationMode.wrappedValue.dismiss()
+                        return
                     }
                 }
+
+                // Update or set the portfolio values
+                portfolioRef.setValue([
+                    "name": coin.name,
+                    "symbol": coin.symbol,
+                    "image": coin.image,
+                    "currentPrice": coin.currentPrice,
+                    "quantity": currentQuantity,
+                    "investedAmount": investedAmount
+                ])
 
                 self.saveTransaction(amount: amount, quantity: quantity, isBuying: isBuying)
                 self.presentationMode.wrappedValue.dismiss()
