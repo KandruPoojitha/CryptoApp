@@ -21,11 +21,19 @@ struct HomeView: View {
         }
         .navigationBarBackButtonHidden(true)
         .background(
-            NavigationLink(
-                destination: DetailLoadingView(coin: $selectedCoin),
+                   Group {
+                       NavigationLink(
+                           destination: DetailLoadingView(coin: $selectedCoin),
                            isActive: $showDetailView,
-                           label: { EmptyView()})
-        )
+                           label: { EmptyView() }
+                       )
+                       NavigationLink(
+                           destination: PortfolioView(),
+                           isActive: $showPortfolio,
+                           label: { EmptyView() }
+                       )
+                   }
+               )
     }
 }
 
