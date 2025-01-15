@@ -3,16 +3,17 @@ import FirebaseAuth
 import FirebaseDatabase
 
 struct AccountView: View {
+
     @State private var userName: String = "John Doe"
     @State private var userEmail: String = "john.doe@example.com"
     @State private var walletBalance: Double = 0.0
-    @State private var stripeCustomerId: String = "" // Store Stripe Customer ID
-    @State private var isLoggedOut: Bool = false // State to track logout status
-    @State private var showResetToast: Bool = false // Show reset password toast
-    @State private var isEditingProfile: Bool = false // Toggle edit mode
+    @State private var stripeCustomerId: String = ""
+    @State private var isLoggedOut: Bool = false
+    @State private var showResetToast: Bool = false
+    @State private var isEditingProfile: Bool = false 
     @State private var updatedUserName: String = ""
     @State private var updatedUserEmail: String = ""
-
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -49,9 +50,6 @@ struct AccountView: View {
                         fetchUserData()
                     }
                     .toast(isShowing: $showResetToast, message: "Password reset link sent to \(userEmail).")
-                    .sheet(isPresented: $isEditingProfile) {
-                        editProfileSheet
-                    }
                 }
             }
         }
@@ -127,49 +125,7 @@ struct AccountView: View {
         .cornerRadius(10)
     }
 
-    // MARK: - Edit Profile Sheet
-    private var editProfileSheet: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                TextField("Username", text: $updatedUserName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
-
-                TextField("Email", text: $updatedUserEmail)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
-
-                Button(action: {
-                    saveProfileChanges()
-                }) {
-                    Text("Save Changes")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .padding(.horizontal)
-
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("Edit Profile")
-            .navigationBarItems(leading: Button("Cancel") {
-                isEditingProfile = false
-            })
-        }
-    }
-
     // MARK: - Transaction History Button
-    private var transactionHistoryButton: some View {
-        NavigationLink(destination: TransactionHistoryView()) {
-            accountOptionRow(title: "Transaction History", icon: "clock")
-        }
-    }
-
-    // MARK: - Funds Transaction History Button
     private var fundstransactionHistoryButton: some View {
         NavigationLink(destination: FundsTransactionHistoryView()) {
             accountOptionRow(title: "Funds Transaction History", icon: "clock")
@@ -205,6 +161,13 @@ struct AccountView: View {
         .cornerRadius(10)
     }
 
+    // MARK: - Transaction History Button
+    private var transactionHistoryButton: some View {
+        NavigationLink(destination: TransactionHistoryView()) {
+            accountOptionRow(title: "Transaction History", icon: "clock")
+        }
+    }
+
     // MARK: - Reset Password Button
     private var resetPasswordButton: some View {
         Button(action: sendResetPasswordLink) {
@@ -218,9 +181,10 @@ struct AccountView: View {
         }
     }
 
-    // MARK: - Logout Button
     private var logoutButton: some View {
-        Button(action: logoutUser) {
+        Button(action: {
+            logoutUser()
+        }) {
             Text("Log Out")
                 .font(.headline)
                 .frame(maxWidth: .infinity)
@@ -231,34 +195,73 @@ struct AccountView: View {
         }
     }
 
-    // MARK: - Save Profile Changes
-    private func saveProfileChanges() {
-        guard let userID = Auth.auth().currentUser?.uid else { return }
-
+    // MARK: - Fetch User Data
+    private func fetchUserData() {
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("No user is logged in.")
+            return
+        }
         let ref = Database.database().reference().child("users").child(userID)
-        ref.updateChildValues(["name": updatedUserName, "email": updatedUserEmail]) { error, _ in
-            if let error = error {
-                print("Error updating profile: \(error.localizedDescription)")
+
+        ref.observeSingleEvent(of: .value) { snapshot in
+            if let userData = snapshot.value as? [String: Any] {
+                self.userName = userData["name"] as? String ?? "Unknown User"
+                self.userEmail = userData["email"] as? String ?? "unknown@example.com"
+                self.walletBalance = userData["balance"] as? Double ?? 0.0
+                self.stripeCustomerId = userData["stripeCustomerId"] as? String ?? ""
+
+                // If stripeCustomerId is empty, create a new Stripe customer
+                if self.stripeCustomerId.isEmpty {
+                    self.createStripeCustomer()
+                }
+            } else {
+                print("Error: User data not found in Firebase.")
+            }
+        }
+    }
+
+    // MARK: - Create Stripe Customer
+    private func createStripeCustomer() {
+        let url = URL(string: "http://localhost:3000/create-customer")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "email": userEmail,
+            "name": userName
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data, error == nil else {
+                print("Error creating Stripe customer: \(error?.localizedDescription ?? "Unknown error")")
                 return
             }
 
-            // Update local state
-            userName = updatedUserName
-            userEmail = updatedUserEmail
-            isEditingProfile = false
-        }
+            if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+               let customerId = json["customerId"] as? String {
+                self.stripeCustomerId = customerId
+
+                // Save to Firebase
+                if let userID = Auth.auth().currentUser?.uid {
+                    let ref = Database.database().reference().child("users").child(userID)
+                    ref.updateChildValues(["stripeCustomerId": customerId])
+                }
+            }
+        }.resume()
     }
 
     // MARK: - Send Reset Password Link
     private func sendResetPasswordLink() {
         Auth.auth().sendPasswordReset(withEmail: userEmail) { error in
-            if let error = error {
-                print("Error sending reset password link: \(error.localizedDescription)")
-                return
-            }
-            showResetToast = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                showResetToast = false
+            if error == nil {
+                showResetToast = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    showResetToast = false
+                }
+            } else {
+                print("Error sending reset password link.")
             }
         }
     }
@@ -271,23 +274,6 @@ struct AccountView: View {
             isLoggedOut = true
         } catch {
             print("Error signing out: \(error.localizedDescription)")
-        }
-    }
-
-    // MARK: - Fetch User Data
-    private func fetchUserData() {
-        guard let userID = Auth.auth().currentUser?.uid else { return }
-        let ref = Database.database().reference().child("users").child(userID)
-
-        ref.observeSingleEvent(of: .value) { snapshot in
-            if let userData = snapshot.value as? [String: Any] {
-                self.userName = userData["name"] as? String ?? "Unknown User"
-                self.userEmail = userData["email"] as? String ?? "unknown@example.com"
-                self.walletBalance = userData["balance"] as? Double ?? 0.0
-                self.stripeCustomerId = userData["stripeCustomerId"] as? String ?? ""
-            } else {
-                print("Error: User data not found in Firebase.")
-            }
         }
     }
 }
@@ -307,10 +293,17 @@ extension View {
                         .background(Color.black.opacity(0.8))
                         .cornerRadius(8)
                         .padding(.bottom, 20)
-                        .transition(.opacity)
-                        .animation(.easeInOut, value: isShowing.wrappedValue)
                 }
+                .transition(.opacity)
+                .animation(.easeInOut, value: isShowing.wrappedValue)
             }
         }
+    }
+}
+
+// MARK: - Preview
+struct AccountView_Previews: PreviewProvider {
+    static var previews: some View {
+        AccountView()
     }
 }
