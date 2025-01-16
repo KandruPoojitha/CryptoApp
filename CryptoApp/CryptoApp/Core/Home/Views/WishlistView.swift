@@ -5,14 +5,14 @@ import FirebaseDatabase
 struct WishlistView: View {
     @EnvironmentObject private var vm: HomeViewModel
     @State private var wishlistCoins: [CoinModel] = []
-    @State private var searchText: String = "" // Search bar text
-    @State private var selectedCoin: CoinModel? = nil // For navigation
-    @State private var showDetailView: Bool = false // Controls navigation to DetailView
+    @State private var searchText: String = ""
+    @State private var selectedCoin: CoinModel? = nil
+    @State private var showDetailView: Bool = false
 
     var body: some View {
         NavigationView {
             VStack {
-                SearchBarView(searchText: $searchText) // Search bar
+                SearchBarView(searchText: $searchText) 
                     .padding(.horizontal)
                     .padding(.top, 10)
 

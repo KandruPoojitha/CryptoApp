@@ -19,6 +19,7 @@ struct HomeView: View {
                 Spacer(minLength: 0)
             }
         }
+        .navigationBarHidden(true) 
         .navigationBarBackButtonHidden(true)
         .background(
                    Group {
@@ -52,10 +53,7 @@ struct HomeView_Previews: PreviewProvider{
 extension HomeView {
     private var HomeHeader: some View {
         HStack{
-            CirleButtonView(iconName: showPortfolio ? "plus" : "info")
-                .animation(.none)
-                .background(
-                    CircleButtonAnimationView(animate: $showPortfolio))
+       
             Spacer()
             Text(showPortfolio ? "Portfolio" : "Live Prices")
                 .font(.headline)
@@ -63,13 +61,6 @@ extension HomeView {
                 .foregroundColor(Color.theme.accent)
                 .animation(.none)
             Spacer()
-            CirleButtonView(iconName: "chevron.right")
-                .rotationEffect(Angle(degrees: showPortfolio ? 180 : 0))
-                .onTapGesture {
-                    withAnimation(.spring()){
-                        showPortfolio.toggle()
-                    }
-                }
         }
         .padding(.horizontal)
     }

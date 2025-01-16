@@ -1,18 +1,18 @@
 import SwiftUI
-import Firebase
 import FirebaseAuth
+import FirebaseDatabase
 
 struct LoginRegisterView: View {
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
-    @State private var alertMessage = ""
-    @State private var isShowingAlert = false
-    @State private var isLoginMode = true
-    @State private var isAccountCreated = false
+    @State private var alertMessage: String = ""
+    @State private var isLoginMode: Bool = true
+    @State private var isAccountCreated: Bool = false
+    @State private var userName: String = ""
     @AppStorage("uid") var userID: String = ""
-    @State private var navigateToHomeView = false
-    @State private var isForgotPasswordAlert = false
+    @State private var navigateToHomeView: Bool = false
+    @State private var isForgotPasswordAlert: Bool = false
 
     var body: some View {
         NavigationView {
@@ -20,20 +20,20 @@ struct LoginRegisterView: View {
                 Color(.systemBackground).edgesIgnoringSafeArea(.all)
                 VStack {
                     Spacer()
-                    HStack {
-                        Text(isLoginMode ? "Welcome Back!" : "Create Account")
-                            .font(.largeTitle)
-                            .bold()
-                            .opacity(1)
-                            .scaleEffect(isLoginMode ? 0.8 : 0.8)
-                            .animation(.spring(), value: isLoginMode)
-                    }
-                    .padding(.top)
+
+                    Text(isLoginMode ? "Welcome Back!" : "Create Account")
+                        .font(.largeTitle)
+                        .bold()
+                        .padding(.top)
+
                     Spacer()
+
+                    if !isLoginMode {
+                        inputField(image: "person", placeholder: "Name", text: $userName, isValid: !userName.isEmpty)
+                    }
                     inputField(image: "mail", placeholder: "Email", text: $email, isValid: email.isValidEmail())
-                    
                     inputField(image: "lock", placeholder: "Password", text: $password, isSecure: true, isValid: isValidPassword(password))
-                    
+
                     if !isLoginMode {
                         inputField(image: "lock.fill", placeholder: "Confirm Password", text: $confirmPassword, isSecure: true, isValid: password == confirmPassword)
                     }
@@ -63,8 +63,6 @@ struct LoginRegisterView: View {
                     }) {
                         Text(isLoginMode ? "Don't have an account?" : "Already have an account?")
                             .foregroundColor(.secondary)
-                            .scaleEffect(isLoginMode ? 1 : 0.9)
-                            .animation(.easeInOut, value: isLoginMode)
                     }
                     .padding()
 
@@ -76,25 +74,17 @@ struct LoginRegisterView: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 10).fill(Color.blue))
-                            .scaleEffect(isLoginMode ? 1 : 1.1)
-                            .animation(.easeInOut, value: isLoginMode)
                     }
                     .padding()
-                    .alert(isPresented: $isShowingAlert) {
-                        Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+
+                    // Error Message
+                    if !alertMessage.isEmpty {
+                        Text(alertMessage)
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
                     }
-                    .alert(isPresented: $isAccountCreated) {
-                        Alert(
-                            title: Text("Success"),
-                            message: Text("Account created successfully! Please log in."),
-                            dismissButton: .default(Text("OK")) {
-                                withAnimation {
-                                    isLoginMode = true
-                                    resetFields()
-                                }
-                            }
-                        )
-                    }
+
                     Spacer()
                 }
                 .padding()
@@ -105,6 +95,7 @@ struct LoginRegisterView: View {
                 )
             }
         }
+        .navigationBarBackButtonHidden(true) 
     }
 
     private func inputField(image: String, placeholder: String, text: Binding<String>, isSecure: Bool = false, isValid: Bool = false) -> some View {
@@ -144,6 +135,8 @@ struct LoginRegisterView: View {
             return "Password must be at least 6 characters."
         case "Confirm Password":
             return "Passwords do not match."
+        case "Name":
+            return "Name cannot be empty."
         default:
             return ""
         }
@@ -153,18 +146,17 @@ struct LoginRegisterView: View {
         email = ""
         password = ""
         confirmPassword = ""
+        userName = ""
     }
 
     private func loginUser() {
         guard email.isValidEmail() else {
             alertMessage = "Please enter a valid email address."
-            isShowingAlert = true
             return
         }
         
         guard isValidPassword(password) else {
             alertMessage = "Password must be at least 6 characters."
-            isShowingAlert = true
             return
         }
 
@@ -182,7 +174,6 @@ struct LoginRegisterView: View {
                 default:
                     alertMessage = "An unexpected error occurred: \(error.localizedDescription)"
                 }
-                isShowingAlert = true
                 return
             }
 
@@ -196,35 +187,40 @@ struct LoginRegisterView: View {
     }
 
     private func registerUser() {
+        if userName.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty {
+            alertMessage = "Please fill all fields to sign up."
+            return
+        }
+
         guard email.isValidEmail() else {
             alertMessage = "Please enter a valid email address."
-            isShowingAlert = true
             return
         }
         
         guard isValidPassword(password) else {
             alertMessage = "Password must be at least 6 characters."
-            isShowingAlert = true
             return
         }
         
         guard password == confirmPassword else {
             alertMessage = "Passwords do not match."
-            isShowingAlert = true
             return
         }
 
         Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
             if let error = error {
                 alertMessage = error.localizedDescription
-                isShowingAlert = true
                 return
             }
 
             if let authResult = authResult {
+                let ref = Database.database().reference().child("users").child(authResult.user.uid)
+                ref.setValue(["name": userName, "email": email, "balance": 0.0])
+
                 withAnimation {
                     userID = authResult.user.uid
                     isAccountCreated = true
+                    alertMessage = ""
                 }
             }
         }
@@ -233,31 +229,19 @@ struct LoginRegisterView: View {
     private func sendPasswordReset() {
         guard email.isValidEmail() else {
             alertMessage = "Please enter a valid email address."
-            isShowingAlert = true
             return
         }
 
         Auth.auth().sendPasswordReset(withEmail: email) { error in
             if let error = error {
                 alertMessage = error.localizedDescription
-                isShowingAlert = true
             } else {
                 alertMessage = "A password reset link has been sent to your email."
-                isShowingAlert = true
             }
         }
     }
-}
 
-func isValidPassword(_ password: String) -> Bool {
-    return password.count >= 6
-}
-
-
-
-struct LoginRegisterView_Previews: PreviewProvider {
-    static var previews: some View {
-        LoginRegisterView()
-            .preferredColorScheme(.dark)
+    private func isValidPassword(_ password: String) -> Bool {
+        return password.count >= 6
     }
 }
