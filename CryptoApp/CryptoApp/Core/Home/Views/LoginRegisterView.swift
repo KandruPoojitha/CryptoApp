@@ -95,6 +95,7 @@ struct LoginRegisterView: View {
                 )
             }
         }
+        .navigationBarBackButtonHidden(true) 
     }
 
     private func inputField(image: String, placeholder: String, text: Binding<String>, isSecure: Bool = false, isValid: Bool = false) -> some View {
