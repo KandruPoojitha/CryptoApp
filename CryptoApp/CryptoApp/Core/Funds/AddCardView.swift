@@ -12,12 +12,22 @@ struct AddCardView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Add Card")
+            Text("Add a Payment Card")
                 .font(.largeTitle)
-                .bold()
+                .fontWeight(.semibold)
+                .foregroundColor(Color.blue)
+
+            Text("Enter your card details below to link it to your account.")
+                .font(.body)
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
 
             CardInputField(cardTextField: $paymentCardTextField)
+                .frame(height: 50)
                 .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
 
             if let errorMessage = errorMessage {
                 Text(errorMessage)
@@ -34,11 +44,13 @@ struct AddCardView: View {
                         .padding()
                 } else {
                     Text("Add Card")
+                        .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.blue)
                         .cornerRadius(10)
+                        .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
                 }
             }
             .disabled(isLoading)
@@ -46,17 +58,19 @@ struct AddCardView: View {
             Spacer()
         }
         .padding()
+        .background(Color(.systemBackground).ignoresSafeArea())
     }
 
     private func addCard() {
         guard paymentCardTextField.isValid else {
-            errorMessage = "Invalid card details."
+            errorMessage = "Invalid card details. Please check and try again."
             return
         }
 
         isLoading = true
         errorMessage = nil
 
+        // Step 1: Create a PaymentMethod
         let paymentMethodParams = STPPaymentMethodParams(
             card: paymentCardTextField.cardParams,
             billingDetails: nil,
@@ -72,6 +86,7 @@ struct AddCardView: View {
                 }
 
                 if let paymentMethodId = paymentMethod?.stripeId {
+                    // Step 2: Attach the PaymentMethod to the customer
                     self.attachPaymentMethodToCustomer(paymentMethodId: paymentMethodId)
                 }
             }
@@ -125,7 +140,11 @@ struct CardInputField: UIViewRepresentable {
     @Binding var cardTextField: STPPaymentCardTextField
 
     func makeUIView(context: Context) -> STPPaymentCardTextField {
-        return cardTextField
+        let textField = cardTextField
+        textField.borderWidth = 0.5
+        textField.cornerRadius = 8
+        textField.borderColor = UIColor.gray
+        return textField
     }
 
     func updateUIView(_ uiView: STPPaymentCardTextField, context: Context) {}

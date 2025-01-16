@@ -4,7 +4,7 @@ import FirebaseDatabase
 import Stripe
 
 struct ManageCardsView: View {
-    var stripeCustomerId: String // Stripe Customer ID passed from AccountView
+    var stripeCustomerId: String 
 
     @State private var cards: [STPPaymentMethod] = []
     @State private var isLoading: Bool = true
