@@ -6,11 +6,13 @@ import FirebaseDatabase
 struct AddFundsView: View {
     var stripeCustomerId: String // Stripe Customer ID passed from AccountView
 
+    @Environment(\.presentationMode) var presentationMode // For navigation back
     @State private var amount: String = ""
     @State private var selectedCardId: String = ""
     @State private var cards: [STPPaymentMethod] = []
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
+    @State private var showToast: Bool = false // To control toast visibility
 
     var body: some View {
         VStack(spacing: 20) {
@@ -66,6 +68,7 @@ struct AddFundsView: View {
         }
         .padding()
         .onAppear(perform: fetchCards)
+      
     }
 
     private func fetchCards() {
@@ -154,6 +157,10 @@ struct AddFundsView: View {
 
                     if let paymentStatus = jsonResponse["status"] as? String, paymentStatus == "succeeded" {
                         self.updateFirebaseBalance(amount: Double(amountInCents))
+                        self.showToast = true // Trigger toast
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            self.presentationMode.wrappedValue.dismiss() // Navigate back
+                        }
                     } else {
                         self.errorMessage = "Payment failed. Status: \(jsonResponse["status"] ?? "unknown")"
                     }
