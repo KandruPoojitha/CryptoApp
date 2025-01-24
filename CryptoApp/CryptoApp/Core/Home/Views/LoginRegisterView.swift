@@ -13,6 +13,7 @@ struct LoginRegisterView: View {
     @AppStorage("uid") var userID: String = ""
     @State private var navigateToHomeView: Bool = false
     @State private var isForgotPasswordAlert: Bool = false
+    @State private var showAlertMessage: Bool = false // Tracks whether to show the alert
 
     var body: some View {
         NavigationView {
@@ -28,6 +29,7 @@ struct LoginRegisterView: View {
 
                     Spacer()
 
+                    // Input Fields
                     if !isLoginMode {
                         inputField(image: "person", placeholder: "Name", text: $userName, isValid: !userName.isEmpty)
                     }
@@ -38,6 +40,7 @@ struct LoginRegisterView: View {
                         inputField(image: "lock.fill", placeholder: "Confirm Password", text: $confirmPassword, isSecure: true, isValid: password == confirmPassword)
                     }
 
+                    // Forgot Password
                     if isLoginMode {
                         Button("Forgot Password?") {
                             isForgotPasswordAlert = true
@@ -55,6 +58,7 @@ struct LoginRegisterView: View {
                         }
                     }
 
+                    // Toggle Login/Register
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.5)) {
                             isLoginMode.toggle()
@@ -66,6 +70,7 @@ struct LoginRegisterView: View {
                     }
                     .padding()
 
+                    // Login/Register Button
                     Button(action: isLoginMode ? loginUser : registerUser) {
                         Text(isLoginMode ? "Sign In" : "Sign Up")
                             .foregroundColor(.white)
@@ -77,12 +82,18 @@ struct LoginRegisterView: View {
                     }
                     .padding()
 
-                    // Error Message
-                    if !alertMessage.isEmpty {
+                    // Alert Message
+                    if showAlertMessage {
                         Text(alertMessage)
-                            .foregroundColor(.red)
+                            .foregroundColor(alertMessage.contains("successfully") ? .green : .red) // Green for success
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
+                            .onAppear {
+                                // Hide alert after 3 seconds
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                    showAlertMessage = false
+                                }
+                            }
                     }
 
                     Spacer()
@@ -95,9 +106,10 @@ struct LoginRegisterView: View {
                 )
             }
         }
-        .navigationBarBackButtonHidden(true) 
+        .navigationBarBackButtonHidden(true)
     }
 
+    // MARK: - Input Field
     private func inputField(image: String, placeholder: String, text: Binding<String>, isSecure: Bool = false, isValid: Bool = false) -> some View {
         VStack(alignment: .leading) {
             HStack {
@@ -127,6 +139,14 @@ struct LoginRegisterView: View {
         }
     }
 
+    // MARK: - Helper Functions
+    private func resetFields() {
+        email = ""
+        password = ""
+        confirmPassword = ""
+        userName = ""
+    }
+
     private func validationMessage(for field: String) -> String {
         switch field {
         case "Email":
@@ -142,85 +162,80 @@ struct LoginRegisterView: View {
         }
     }
 
-    private func resetFields() {
-        email = ""
-        password = ""
-        confirmPassword = ""
-        userName = ""
+    private func isValidPassword(_ password: String) -> Bool {
+        return password.count >= 6
     }
 
+    // MARK: - Firebase Functions
     private func loginUser() {
-        guard email.isValidEmail() else {
-            alertMessage = "Please enter a valid email address."
-            return
-        }
-        
-        guard isValidPassword(password) else {
-            alertMessage = "Password must be at least 6 characters."
+        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        guard !normalizedEmail.isEmpty, !password.isEmpty else {
+            showAlert("Please fill in all fields to sign in.")
             return
         }
 
-        Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
-            if let error = error as NSError? {
-                switch AuthErrorCode(rawValue: error.code) {
-                case .wrongPassword:
-                    alertMessage = "The password you entered is incorrect. Please try again."
-                case .invalidEmail:
-                    alertMessage = "The email address format is invalid. Please check and try again."
-                case .userNotFound:
-                    alertMessage = "No account found with this email address. Please sign up."
-                case .userDisabled:
-                    alertMessage = "This account has been disabled. Contact support for assistance."
-                default:
-                    alertMessage = "An unexpected error occurred: \(error.localizedDescription)"
-                }
+        Auth.auth().signIn(withEmail: normalizedEmail, password: password) { authResult, error in
+            if let error = error {
+                showAlert(error.localizedDescription)
                 return
             }
 
-            if let authResult = authResult {
-                withAnimation {
-                    userID = authResult.user.uid
-                    navigateToHomeView = true
-                }
+            if let user = authResult?.user {
+                userID = user.uid
+                navigateToHomeView = true
             }
         }
     }
 
     private func registerUser() {
-        if userName.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty {
-            alertMessage = "Please fill all fields to sign up."
+        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        if userName.isEmpty || normalizedEmail.isEmpty || password.isEmpty || confirmPassword.isEmpty {
+            showAlert("Please fill all fields to sign up.")
             return
         }
 
-        guard email.isValidEmail() else {
-            alertMessage = "Please enter a valid email address."
+        guard normalizedEmail.isValidEmail() else {
+            showAlert("Please enter a valid email address.")
             return
         }
-        
+
         guard isValidPassword(password) else {
-            alertMessage = "Password must be at least 6 characters."
-            return
-        }
-        
-        guard password == confirmPassword else {
-            alertMessage = "Passwords do not match."
+            showAlert("Password must be at least 6 characters.")
             return
         }
 
-        Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
-            if let error = error {
-                alertMessage = error.localizedDescription
+        guard password == confirmPassword else {
+            showAlert("Passwords do not match.")
+            return
+        }
+
+        Auth.auth().createUser(withEmail: normalizedEmail, password: password) { authResult, error in
+            if let error = error as NSError?, let errorCode = AuthErrorCode(rawValue: error.code) {
+                switch errorCode {
+                case .emailAlreadyInUse:
+                    showAlert("The email address is already in use by another account.")
+                default:
+                    showAlert(error.localizedDescription)
+                }
                 return
             }
 
             if let authResult = authResult {
                 let ref = Database.database().reference().child("users").child(authResult.user.uid)
-                ref.setValue(["name": userName, "email": email, "balance": 0.0])
+                ref.setValue(["name": userName, "email": normalizedEmail, "balance": 0.0]) { error, _ in
+                    if let error = error {
+                        showAlert("Failed to save user data: \(error.localizedDescription)")
+                        return
+                    }
 
-                withAnimation {
-                    userID = authResult.user.uid
-                    isAccountCreated = true
-                    alertMessage = ""
+                    // Display success message and switch to login mode
+                    showAlert("Account created successfully! Please log in.")
+                    withAnimation {
+                        isLoginMode = true
+                        resetFields()
+                    }
                 }
             }
         }
@@ -228,20 +243,21 @@ struct LoginRegisterView: View {
 
     private func sendPasswordReset() {
         guard email.isValidEmail() else {
-            alertMessage = "Please enter a valid email address."
+            showAlert("Please enter a valid email address.")
             return
         }
 
         Auth.auth().sendPasswordReset(withEmail: email) { error in
             if let error = error {
-                alertMessage = error.localizedDescription
-            } else {
-                alertMessage = "A password reset link has been sent to your email."
+                showAlert(error.localizedDescription)
+                return
             }
+            showAlert("Password reset email sent.")
         }
     }
 
-    private func isValidPassword(_ password: String) -> Bool {
-        return password.count >= 6
+    private func showAlert(_ message: String) {
+        alertMessage = message
+        showAlertMessage = true
     }
 }
